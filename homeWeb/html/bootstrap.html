@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Home Environment</title>
+
+    <!-- Bootstrap -->
+    <link href="scripts/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+<!-- 
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+ -->
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="scripts/bootstrap/dist/js/bootstrap.min.js"></script>
+<!-- 
+    <script src="https://www.google.com/jsapi"></script>
+ -->
+    <script src="/scripts/echarts/dist/echarts.min.js"></script>
+
+    <!-- 为 ECharts 准备一个具备大小（宽高）的Dom -->
+    <div id="humiChart" style="width: 100%;height:260px;"></div>
+    <div id="tempChart" style="width: 100%;height:260px;"></div>
+    <script type="text/javascript">
+    // 基于准备好的dom，初始化echarts实例
+    var tempChart = echarts.init(document.getElementById('tempChart'));
+    var humiChart = echarts.init(document.getElementById('humiChart'));
+
+
+    var tempData = [];
+    var humiData = [];
+
+    var temp_public_key = 'w0BGBwQWwZSk1QQbGZoaSQge0kE';
+    var humi_public_key = 'kBgQVO2lB6U3mYYb9GNQSWVpBe4';
+        // 使用刚指定的配置项和数据显示图表。
+    function drawHumiChart() {
+        var url='http://qunanan.win:8080/output/' + humi_public_key + '.json?gt[timestamp]=now%20-1day',
+        xmlHttp = new XMLHttpRequest();
+        xmlHttp.onreadystatechange = function() { 
+            if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+                humiCallback(xmlHttp.responseText);
+        }
+        xmlHttp.open("GET", url, true); // true for asynchronous 
+        xmlHttp.send(null);
+    }
+    function humiCallback(jsonData) {
+        var dataArray = JSON.parse(jsonData);
+        console.log(dataArray);
+        dataArray.forEach(function(dat) {
+            var dateValue = new Date(dat.timestamp);
+            var dataValue = {
+                name: dateValue.toLocaleTimeString(),
+                value: [
+                    dateValue,
+                    dat.humi
+                ]};
+            humiData.unshift(dataValue);
+        });
+        console.log('drawHumiChart');
+        var option = {        
+            xAxis: {
+            type: 'time',
+            boundaryGap: false,
+            },
+            series: [
+                {
+                    name:'Humidity',
+                    type:'line',
+                    showSymbol: false,
+                    hoverAnimation: false,
+                    itemStyle: {
+                        normal: {
+                            color: 'rgb(255, 70, 131)'
+                        }
+                    },
+                    data: humiData
+                }
+            ]
+        };
+        humiChart.setOption(option);
+        humiChart.hideLoading();
+    }
+
+    function drawTempChart() {
+        var url='http://qunanan.win:8080/output/' + temp_public_key + '.json?gt[timestamp]=now%20-1day',
+
+        xmlHttp = new XMLHttpRequest();
+        xmlHttp.onreadystatechange = function() { 
+            if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+                tempCallback(xmlHttp.responseText);
+        }
+        xmlHttp.open("GET", url, true); // true for asynchronous 
+        xmlHttp.send(null);
+    }
+    // onload callback
+    function tempCallback(jsonData) {
+        var dataArray = JSON.parse(jsonData);
+        console.log(dataArray);
+        dataArray.forEach(function(dat) {
+            var dateValue = new Date(dat.timestamp);
+            var dataValue = {
+                name: dateValue.toLocaleTimeString(),
+                value: [
+                    dateValue,
+                    dat.temp
+                ]};
+            tempData.unshift(dataValue);
+        });
+        console.log('drawTempChart');
+        var option = {        
+            xAxis: {
+            type: 'time',
+            boundaryGap: false,
+            },
+            series: [
+                {
+                    name:'Temperature',
+                    type:'line',
+                    showSymbol: false,
+                    hoverAnimation: false,
+                    itemStyle: {
+                        normal: {
+                            color: 'rgb(255, 70, 131)'
+                        }
+                    },
+                    data: tempData
+                }
+            ]
+        };
+        tempChart.setOption(option);
+        tempChart.hideLoading();
+    }
+
+    
+
+    tempOption = {
+        tooltip: {
+            trigger: 'axis',
+                formatter: function (params) {
+                params = params[0];
+                return params.name + ' : <br />' + params.value[1] + ' \xB0C';
+            },
+            axisPointer: {
+                animation: false
+            }
+        },
+        title: {
+            left: 'left',
+            text: 'Temperature',
+        },
+        toolbox: {
+            show: true,
+            feature: {
+                dataView: {show: true, readOnly: false},
+                restore: {show: true},
+                saveAsImage: {show: true}
+            }
+        },
+        xAxis: {
+            type: 'time',
+            boundaryGap: false,
+        },
+        yAxis: {
+            type: 'value',
+            position:20,
+            boundaryGap: [0, '100%']
+        },
+        dataZoom: [{
+            type: 'slider',
+            start: 50,
+            end: 100
+        }],
+        series: [
+            {
+                name:'Humidity',
+                type:'line',
+                showSymbol: false,
+                hoverAnimation: false,
+                itemStyle: {
+                    normal: {
+                        color: 'rgb(255, 70, 131)'
+                    }
+                },
+                data: tempData
+            }
+        ]
+    };
+    
+    humiOption = {
+        tooltip: {
+            trigger: 'axis',
+                formatter: function (params) {
+                params = params[0];
+                return params.name + ' : <br />' + params.value[1] + ' %';
+            },
+            axisPointer: {
+                animation: false
+            }
+        },
+        title: {
+            left: 'left',
+            text: 'Humidity',
+        },
+        legend: {
+            top: 'bottom',
+            data:['意向']
+        },
+        toolbox: {
+            show: true,
+            feature: {
+                dataView: {show: true, readOnly: false},
+                restore: {show: true},
+                saveAsImage: {show: true}
+            }
+        },
+        xAxis: {
+            type: 'time',
+            boundaryGap: false,
+        },
+        yAxis: {
+            type: 'value',
+            position:'left',
+            boundaryGap: false,
+            mini: 0,
+            max: 100
+        },
+        dataZoom: [{
+            type: 'slider',
+            start: 50,
+            end: 100
+        }],
+        series: [
+            {
+                name:'Temperature',
+                type:'line',
+                showSymbol: false,
+                hoverAnimation: false,
+                itemStyle: {
+                    normal: {
+                        color: 'rgb(255, 70, 131)'
+                    }
+                },
+                data: humiData
+            }
+        ]
+    };
+    
+    tempChart.setOption(tempOption);
+    humiChart.setOption(humiOption);
+    tempChart.showLoading();
+    humiChart.showLoading();
+
+    drawHumiChart();
+    drawTempChart();
+    </script>
+
+  </body>
+</html>
